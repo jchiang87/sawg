@@ -18,14 +18,14 @@ warp_amp = 2     # Amplitude of astrometric shift.
 warp_scale = 30  # Exponential scale of shift.  This is about a 
                  # factor of 10 larger than measured
 
-pixel_scale = 1.0    # arcsec / pixel
+pixel_scale = 0.2    # arcsec / pixel
 sky_level = 1e6      # ADU / arcsec^2
 
 signal_to_noise = 10000   # bright stars
 
 psf_flux = 1
 psf_beta = 3
-psf_fwhm = 2.85
+psf_fwhm = 0.5    # arcsec
 psf_trunc = 2.*psf_fwhm
 psf_image = galsim.ImageF(nxpix, nypix, scale=pixel_scale)
 

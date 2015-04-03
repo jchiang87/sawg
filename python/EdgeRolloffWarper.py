@@ -29,13 +29,11 @@ class EdgeRolloffWarper(object):
             self._progress(xw, nx, verbose=verbose)
             for yw in range(ny):
                 ptw = afwGeom.Point2D(xw, yw)
-                pt0 = self.transform.reverseTransform(ptw)
-                #pt0 = self.transform.forwardTransform(ptw)
+                pt0 = self.transform.forwardTransform(ptw)
                 x0 = int(np.round(pt0.getX()))
                 y0 = int(np.round(pt0.getY()))
                 try:
-                    wiarr[yw][xw] = imarr[y0][x0]/self.jacobian(pt0.getX(), pt0.getY())
-                    #wiarr[yw][xw] = imarr[y0][x0]*self.jacobian(pt0.getX(), pt0.getY())
+                    wiarr[yw][xw] = imarr[y0][x0]*self.jacobian(pt0.getX(), pt0.getY())
                 except IndexError:
                     pass
         if verbose:
