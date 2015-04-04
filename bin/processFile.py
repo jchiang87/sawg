@@ -340,7 +340,7 @@ Also includes the PSF model and detection masks.
         calibSources = calibSourcesDict[inputFile]
         sources = sourcesDict[inputFile]
 
-        exposure.getMetadata().set("VERSION", version)
+#        exposure.getMetadata().set("VERSION", version)
 
         if args.outputCalexp:
             exposure.writeFits(args.outputCalexp[i])

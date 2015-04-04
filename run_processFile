@@ -2,11 +2,9 @@
 
 processFile.py star_grid_unwarped.fits --outputCatalog cat_unwarped.fits \
     --verbose --config variance=-1 edgeRolloff.applyModel=False
-echo
+
 processFile.py star_grid_warped.fits --outputCatalog cat_warp.fits \
     --verbose --config variance=-1 edgeRolloff.applyModel=False
-echo
+
 processFile.py star_grid_warped.fits --outputCatalog cat_warp_modeled.fits \
-    --verbose --config variance=-1 --configfile edgerolloff_config.py
-#
-#processFile.py demo11_image.fits --outputCatalog demo11_catalog.fits --verbose
+    --verbose --config variance=-1 --configfile config/edgerolloff_config.py
