@@ -13,6 +13,8 @@ ny = 20          # number of star rows
 dx = nxpix/nx    # grid spacing
 dy = nypix/ny
 
+star_coords_file = 'star_grid_coordinates.txt'
+
 # Warping parameters in pixels
 warp_amp = 2     # Amplitude of astrometric shift.
 warp_scale = 30  # Exponential scale of shift.  This is about a 
@@ -29,8 +31,16 @@ psf_fwhm = 0.5    # arcsec
 psf_trunc = 2.*psf_fwhm
 psf_image = galsim.ImageF(nxpix, nypix, scale=pixel_scale)
 
-def offset(x, y, x0=nxpix/2., y0=nypix/2.):
+def offset(x, y, x0=nxpix/2. - 0.5, y0=nypix/2. - 0.5):
     return x - x0, y - y0
+
+#
+# Object to perform nominal pixel to actual pixel transformation.
+#
+warper = EdgeRolloffWarper(warp_amp, warp_scale, nxpix,
+                           warp_amp, warp_scale, nypix)
+
+star_coords = open(star_coords_file, 'w')
 
 #
 # Create an array of stars, using a Moffat profile psf.
@@ -49,6 +59,13 @@ for ix in range(nx+1):
         xpos = ix*dx - dx/2.
         ypos = iy*dy - dy/2.
         psf.drawImage(psf_image, offset=offset(xpos, ypos), add_to_image=True)
+        #
+        # Write nominal and actual star locations in pixel coordinates
+        #
+        xposw, yposw = warper.nominal_to_actual_pixel(xpos, ypos)
+        star_coords.write('%.4f  %.4f  %.4f  %.4f\n' 
+                          % (xpos, ypos, xposw, yposw))
+star_coords.close()
 print "Done"
 #
 # Add sky noise.
@@ -62,9 +79,6 @@ psf_image.addNoiseSNR(noise, signal_to_noise)
 # Warp the image using the edge rolloff transform.  This involves a 
 # pixel-by-pixel mapping
 #
-warper = EdgeRolloffWarper(warp_amp, warp_scale, nxpix,
-                           warp_amp, warp_scale, nypix)
-
 print "Warping image"
 warped_image = warper.run(psf_image)
 

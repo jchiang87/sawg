@@ -33,12 +33,17 @@ class EdgeRolloffWarper(object):
                 x0 = int(np.round(pt0.getX()))
                 y0 = int(np.round(pt0.getY()))
                 try:
-                    wiarr[yw][xw] = imarr[y0][x0]*self.jacobian(pt0.getX(), pt0.getY())
+                    wiarr[yw][xw] = imarr[y0][x0]*self.jacobian(pt0.getX(),
+                                                                pt0.getY())
                 except IndexError:
                     pass
         if verbose:
             print "Done"
         return warped_image
+    def nominal_to_actual_pixel(self, xpos, ypos):
+        pt0 = afwGeom.Point2D(xpos, ypos)
+        ptw = self.transform.reverseTransform(pt0)
+        return ptw.getX(), ptw.getY()
     def _progress(self, x, nx, verbose=False, dx0=4, dx1=20):
         if not verbose:
             return
