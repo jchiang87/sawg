@@ -6,9 +6,13 @@ import lsst.afw.geom as afwGeom
 import lsst.obs.lsstSim as obs_lsstSim
 
 class EdgeRolloffWarper(object):
-    def __init__(self, xamp, xscale, xwidth, yamp, yscale, ywidth):
-        xfunctor = obs_lsstSim.EdgeRolloffFunctor(xamp, xscale, xwidth)
-        yfunctor = obs_lsstSim.EdgeRolloffFunctor(yamp, yscale, ywidth)
+    def __init__(self, config, oversampling=1):
+        xfunctor = obs_lsstSim.EdgeRolloffFunctor(config.xamp*oversampling,
+                                                  config.xscale*oversampling, 
+                                                  config.xwidth*oversampling)
+        yfunctor = obs_lsstSim.EdgeRolloffFunctor(config.yamp*oversampling,
+                                                  config.yscale*oversampling, 
+                                                  config.ywidth*oversampling)
         self.transform = afwGeom.SeparableXYTransform(xfunctor, yfunctor)
     def jacobian(self, x, y):
         return (self.transform.getXfunctor().derivative(x)**2 +

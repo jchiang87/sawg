@@ -1,79 +1,110 @@
 import sys
 import numpy as np
 import galsim
+from lsst.obs.lsstSim import EdgeRolloffConfig
 from EdgeRolloffWarper import EdgeRolloffWarper
+from SensorSimConfig import SensorSimConfig, TanWcsConfig
+
+def rebin(image, resamp_factor):
+    '''
+    Rebin a galsim.Image into a smaller galsim.Image of the same rank
+    whose dimensions are resamp_factor smaller than the original
+    dimensions.  resamp_factor must be a divisor of the number of
+    pixels in each dimension.
+    >>> a=rand(6, 4); b=rebin(a, 2)
+    >>> a=rand(6); b=rebin(a, 2)
+    '''
+    if resamp_factor == 1:
+        return image
+    a = image.array
+    shape = a.shape
+    for x in shape:
+        if x % resamp_factor != 0:
+            raise RuntimeError("resamp_factor must be a common factor  "
+                               + "of all image dimensions.")
+    args = tuple(x/resamp_factor for x in a.shape)
+    lenShape = len(shape)
+    factor = np.asarray(shape)/np.asarray(args)
+    evList = ['a.reshape('] + \
+             ['args[%d],factor[%d],'%(i,i) for i in range(lenShape)] + \
+             [')'] + ['.sum(%d)'%(i+1) for i in range(lenShape)]
+    #print ''.join(evList)
+    rebinned_array = eval(''.join(evList))
+    rebinned_image = galsim.ImageF(args[1], args[0],
+                                   scale=image.scale*resamp_factor)
+    rebinned_image.array[:] = rebinned_array
+    return rebinned_image
 
 random_seed = 147918741
 
-nxpix = 400      # image size
-nypix = 400
+#
+# Read in the default configs
+#
+simConfig = SensorSimConfig()
+edgeRolloffConfig = EdgeRolloffConfig()
+tanWcsConfig = TanWcsConfig()
+#
+# Increase the scale of the edge rolloff by a factor of 10 to make
+# make the effects more obvious.
+#
+edgeRolloffConfig.xscale *= 10
+edgeRolloffConfig.yscale *= 10
 
-nx = 20          # number of star columns
-ny = 20          # number of star rows
-dx = nxpix/nx    # grid spacing
-dy = nypix/ny
+#
+# Object to perform transformation from nominal pixel to actual pixel.
+#
+warper = EdgeRolloffWarper(edgeRolloffConfig,
+                           oversampling=simConfig.oversampling)
 
-star_coords_file = 'star_grid_coordinates.txt'
+star_coords = open(simConfig.star_coords_file, 'w')
 
-# Warping parameters in pixels
-warp_amp = 2     # Amplitude of astrometric shift.
-warp_scale = 30  # Exponential scale of shift.  This is about a 
-                 # factor of 10 larger than measured
+#
+# Create the (oversampled) image.
+#
+pixel_scale = simConfig.pixel_scale/float(simConfig.oversampling)
+psf_image = galsim.ImageF(simConfig.nxpix*simConfig.oversampling,
+                          simConfig.nypix*simConfig.oversampling,
+                          scale=pixel_scale)
 
-pixel_scale = 0.2    # arcsec / pixel
-sky_level = 1e6      # ADU / arcsec^2
+#
+# Create an array of stars, using a Moffat profile PSF.
+#
+print "Creating an array of stars"
+psf = galsim.Moffat(beta=simConfig.psf_beta, fwhm=simConfig.psf_fwhm,
+                    trunc=simConfig.psf_trunc, flux=simConfig.psf_flux)
 
-signal_to_noise = 10000   # bright stars
-
-psf_flux = 1
-psf_beta = 3
-psf_fwhm = 0.5    # arcsec
-psf_trunc = 2.*psf_fwhm
-psf_image = galsim.ImageF(nxpix, nypix, scale=pixel_scale)
-
-def offset(x, y, x0=nxpix/2. - 0.5, y0=nypix/2. - 0.5):
+def offset(x, y, x0=simConfig.x0, y0=simConfig.y0):
     return x - x0, y - y0
 
-#
-# Object to perform nominal pixel to actual pixel transformation.
-#
-warper = EdgeRolloffWarper(warp_amp, warp_scale, nxpix,
-                           warp_amp, warp_scale, nypix)
-
-star_coords = open(star_coords_file, 'w')
-
-#
-# Create an array of stars, using a Moffat profile psf.
-#
-print "Creating array of stars"
-psf = galsim.Moffat(beta=psf_beta, fwhm=psf_fwhm, trunc=psf_trunc,
-                    flux=psf_flux)
-for ix in range(nx+1):
-    if ix % ((nx+1)/4) == 0:
+for ix in range(simConfig.nxstars+1):
+    if ix % ((simConfig.nxstars+1)/4) == 0:
         sys.stdout.write('!')
         sys.stdout.flush()
     else:
         sys.stdout.write('.')
         sys.stdout.flush()
-    for iy in range(ny+1):
-        xpos = ix*dx - dx/2.
-        ypos = iy*dy - dy/2.
+    for iy in range(simConfig.nystars+1):
+        xpos = ix*simConfig.star_grid_dx - simConfig.star_grid_dx/2.
+        ypos = iy*simConfig.star_grid_dy - simConfig.star_grid_dy/2.
         psf.drawImage(psf_image, offset=offset(xpos, ypos), add_to_image=True)
         #
         # Write nominal and actual star locations in pixel coordinates
         #
         xposw, yposw = warper.nominal_to_actual_pixel(xpos, ypos)
         star_coords.write('%.4f  %.4f  %.4f  %.4f\n' 
-                          % (xpos, ypos, xposw, yposw))
+                          % (xpos/simConfig.oversampling,
+                             ypos/simConfig.oversampling,
+                             xposw/simConfig.oversampling,
+                             yposw/simConfig.oversampling))
 star_coords.close()
 print "Done"
 #
 # Add sky noise.
 #
 ud = galsim.UniformDeviate(random_seed)
-sky_level_pixel = sky_level*pixel_scale**2
+sky_level_pixel = simConfig.sky_level*pixel_scale**2
 noise = galsim.PoissonNoise(ud, sky_level=sky_level_pixel)
-psf_image.addNoiseSNR(noise, signal_to_noise)
+psf_image.addNoiseSNR(noise, simConfig.signal_to_noise)
 
 #
 # Warp the image using the edge rolloff transform.  This involves a 
@@ -83,20 +114,23 @@ print "Warping image"
 warped_image = warper.run(psf_image)
 
 #
-# Add sky projection TanWCS
+# Rebin at the actual sensor resolution.
 #
-dudx = 1
-dudy = 0
-dvdx = 0
-dvdy = 1
-affine = galsim.AffineTransform(dudx, dudy, dvdx, dvdy,
+psf_image = rebin(psf_image, simConfig.oversampling)
+warped_image = rebin(warped_image, simConfig.oversampling)
+
+#
+# Add sky projection TanWCS.
+#
+affine = galsim.AffineTransform(tanWcsConfig.dudx, tanWcsConfig.dudy, 
+                                tanWcsConfig.dvdx, tanWcsConfig.dvdy,
                                 origin=psf_image.trueCenter())
-sky_center = galsim.CelestialCoord(ra=19.3*galsim.hours,
-                                   dec=-33.1*galsim.degrees)
+sky_center = galsim.CelestialCoord(ra=tanWcsConfig.ra_center*galsim.hours,
+                                   dec=tanWcsConfig.dec_center*galsim.degrees)
 wcs = galsim.TanWCS(affine, sky_center, units=galsim.arcsec)
 
 psf_image.wcs = wcs
 warped_image.wcs = wcs
 
-psf_image.write('star_grid_unwarped.fits')
-warped_image.write('star_grid_warped.fits')
+psf_image.write('star_grid_unwarped_oversamp_%03i.fits' % simConfig.oversampling)
+warped_image.write('star_grid_warped_oversamp_%03i.fits' % simConfig.oversampling)
