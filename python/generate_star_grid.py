@@ -44,8 +44,10 @@ simConfig = SensorSimConfig()
 edgeRolloffConfig = EdgeRolloffConfig()
 tanWcsConfig = TanWcsConfig()
 #
-# Increase the scale of the edge rolloff by a factor of 10 to make
-# make the effects more obvious.
+simConfig.star_coords_file = 'star_grid_coords_%03i.txt' % simConfig.oversampling
+#
+# Increase the scale of the edge rolloff by a factor of 10 to make the
+# effects more obvious.
 #
 edgeRolloffConfig.xscale *= 10
 edgeRolloffConfig.yscale *= 10

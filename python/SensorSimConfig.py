@@ -9,20 +9,20 @@ class TanWcsConfig(pexConfig.Config):
     dudy = pexConfig.Field(dtype=float, default=0, doc="")
     dvdx = pexConfig.Field(dtype=float, default=0, doc="")
     dvdy = pexConfig.Field(dtype=float, default=1, doc="")
-    ra_center = pexConfig.Field(dtype=float, default=19.3, doc='RA in hours')
-    dec_center = pexConfig.Field(dtype=float, default=33.1,
+    ra_center = pexConfig.Field(dtype=float, default=12, doc='RA in hours')
+    dec_center = pexConfig.Field(dtype=float, default=0,
                                  doc='Dec in degrees')
 
 class SensorSimConfig(pexConfig.Config):
     """
-    Configuration class for star grid GalSim-based simulations to
+    Configuration class for GalSim-based star grid simulations to
     study sensor warping effects.
     """
     xextent = pexConfig.Field(dtype=int, default=4000,
                               doc="Number of pixels in sensor x-direction")
     yextent = pexConfig.Field(dtype=int, default=4000,
                               doc="Number of pixels in sensor y-direction")
-    oversampling = pexConfig.Field(dtype=int, default=1,
+    oversampling = pexConfig.Field(dtype=int, default=4,
                                    doc="Number of micro pixels per pixel")
     pixel_scale = pexConfig.Field(dtype=float, default=0.2, doc="arcsec / pixel")
 
@@ -60,9 +60,9 @@ class SensorSimConfig(pexConfig.Config):
     @property
     def x0(self):
         "x-coordinate of image center (pixels)"
-        return self.nxpix*self.oversampling/2. - 0.5
+        return (self.nxpix/2. - 0.5)*self.oversampling
     @property
     def y0(self):
         "y-coordinate of image center (pixels)"
-        return self.nypix*self.oversampling/2. - 0.5
+        return (self.nypix/2. - 0.5)*self.oversampling
 
