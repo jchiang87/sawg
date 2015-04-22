@@ -4,8 +4,9 @@ import subprocess
 try:
     suffix = "%03i" % int(sys.argv[1])
 except:
-    print "usage: python run_processFile.py <resampling factor>"
-    sys.exit()
+    print "usage: python run_processFile.py <resampling factor>[=10]"
+    print "using resampling factor = 10"
+    suffix = "010"
 
 command = """processFile.py star_grid_unwarped_oversamp_%(suffix)s.fits \
     --outputCatalog cat_unwarped_oversamp_%(suffix)s.fits \
