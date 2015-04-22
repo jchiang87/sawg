@@ -22,7 +22,7 @@ class SensorSimConfig(pexConfig.Config):
                               doc="Number of pixels in sensor x-direction")
     yextent = pexConfig.Field(dtype=int, default=4000,
                               doc="Number of pixels in sensor y-direction")
-    oversampling = pexConfig.Field(dtype=int, default=4,
+    oversampling = pexConfig.Field(dtype=int, default=10,
                                    doc="Number of micro pixels per pixel")
     pixel_scale = pexConfig.Field(dtype=float, default=0.2, doc="arcsec / pixel")
 
