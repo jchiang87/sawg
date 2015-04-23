@@ -14,4 +14,4 @@ In [4]: lsst.obs.lsstSim.__version__
 Out[4]: 'master-gc584ed14e8+3'
 ```
 
-Once you have the stack setup, just add the sawg/python directory to your PYTHONPATH.
+Once you have the stack setup, just add the python directory to your PYTHONPATH and the bin directory to your PATH.
