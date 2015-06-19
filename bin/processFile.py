@@ -39,7 +39,7 @@ import lsst.afw.display.ds9        as ds9
 import lsst.meas.algorithms        as measAlg
 import lsst.pex.config             as pexConfig
 
-from lsst.obs.lsstSim import addEdgeRolloffDistortion, EdgeRolloffConfig
+from sensorDistortions import addEdgeRolloffDistortion, EdgeRolloffConfig
 from lsst.pipe.tasks.calibrate import CalibrateTask
 from lsst.meas.algorithms.detection import SourceDetectionTask
 try:

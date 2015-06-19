@@ -1,9 +1,17 @@
 import sys
 import numpy as np
 import galsim
-from lsst.obs.lsstSim import EdgeRolloffConfig
+from sensorDistortions import EdgeRolloffConfig
 from EdgeRolloffWarper import EdgeRolloffWarper
 from SensorSimConfig import SensorSimConfig, TanWcsConfig
+
+def getTanWCS(image, config):
+    affine = galsim.AffineTransform(config.dudx, config.dudy, config.dvdx, 
+                                    config.dvdy, origin=image.trueCenter())
+    sky_center = galsim.CelestialCoord(config.ra_center*galsim.hours,
+                                       config.dec_center*galsim.degrees)
+    wcs = galsim.TanWCS(affine, sky_center, units=galsim.arcsec)
+    return wcs
 
 def rebin(image, resamp_factor):
     '''
@@ -44,7 +52,8 @@ simConfig = SensorSimConfig()
 edgeRolloffConfig = EdgeRolloffConfig()
 tanWcsConfig = TanWcsConfig()
 #
-simConfig.star_coords_file = 'star_grid_coords_%03i.txt' % simConfig.oversampling
+simConfig.star_coords_file = 'star_grid_coords_%03i.txt' \
+                             % simConfig.oversampling
 #
 # Increase the scale of the edge rolloff by a factor of 10 to make the
 # effects more obvious.
@@ -116,23 +125,18 @@ print "Warping image"
 warped_image = warper.run(psf_image)
 
 #
-# Rebin at the actual sensor resolution.
+# Rebin at the actual sensor resolution
 #
 psf_image = rebin(psf_image, simConfig.oversampling)
 warped_image = rebin(warped_image, simConfig.oversampling)
 
 #
-# Add sky projection TanWCS.
+# Add sky projection TanWCS
 #
-affine = galsim.AffineTransform(tanWcsConfig.dudx, tanWcsConfig.dudy, 
-                                tanWcsConfig.dvdx, tanWcsConfig.dvdy,
-                                origin=psf_image.trueCenter())
-sky_center = galsim.CelestialCoord(ra=tanWcsConfig.ra_center*galsim.hours,
-                                   dec=tanWcsConfig.dec_center*galsim.degrees)
-wcs = galsim.TanWCS(affine, sky_center, units=galsim.arcsec)
+psf_image.wcs = getTanWCS(psf_image, tanWcsConfig)
+warped_image.wcs = psf_image.wcs
 
-psf_image.wcs = wcs
-warped_image.wcs = wcs
-
-psf_image.write('star_grid_unwarped_oversamp_%03i.fits' % simConfig.oversampling)
-warped_image.write('star_grid_warped_oversamp_%03i.fits' % simConfig.oversampling)
+psf_image.write('star_grid_unwarped_oversamp_%03i.fits'
+                % simConfig.oversampling)
+warped_image.write('star_grid_warped_oversamp_%03i.fits' 
+                   % simConfig.oversampling)

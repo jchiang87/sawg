@@ -1,5 +1,4 @@
 import lsst.pex.config as pexConfig
-from lsst.obs.lsstSim import EdgeRolloffConfig
 
 class TanWcsConfig(pexConfig.Config):
     """
@@ -22,7 +21,7 @@ class SensorSimConfig(pexConfig.Config):
                               doc="Number of pixels in sensor x-direction")
     yextent = pexConfig.Field(dtype=int, default=4000,
                               doc="Number of pixels in sensor y-direction")
-    oversampling = pexConfig.Field(dtype=int, default=10,
+    oversampling = pexConfig.Field(dtype=int, default=1,
                                    doc="Number of micro pixels per pixel")
     pixel_scale = pexConfig.Field(dtype=float, default=0.2, doc="arcsec / pixel")
 
