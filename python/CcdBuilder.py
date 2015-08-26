@@ -1,3 +1,4 @@
+import numpy as np
 import lsst.afw.image as afwImage
 import lsst.afw.math as afwMath
 import lsst.afw.cameraGeom.fitsUtils as fitsUtils
@@ -30,9 +31,10 @@ class CcdBuilder(fitsUtils.DetectorBuilder):
         nx = 7*ny - sign*(channel%8)
         fitsUtils.setByKey(metadata, 'DTV1', nx*naxis1, clobber)
         fitsUtils.setByKey(metadata, 'DTV2', ny*naxis2, clobber)
-        # Map to the keyword expected for this value
-        fitsUtils.setByKey(metadata, 'DTM1_1', metadata.get('LTM1_1'), clobber)
-        fitsUtils.setByKey(metadata, 'DTM2_2', metadata.get('LTM2_2'), clobber)
+        # Infer DTM values from DETSEC values.
+        xb, yb = _parseGeomKeyword(metadata.get('DETSEC'))
+        fitsUtils.setByKey(metadata, 'DTM1_1', np.sign(xb[1] - xb[0]), clobber)
+        fitsUtils.setByKey(metadata, 'DTM2_2', np.sign(yb[1] - yb[0]), clobber)
         self._defaultSanitization(metadata, clobber)
     def assembleImage(self, gains=None):
         imDict = {}
@@ -62,11 +64,17 @@ class CcdBuilder(fitsUtils.DetectorBuilder):
         return resultExp.getMaskedImage().getImage()
 
 if __name__ == '__main__':
-    infile = '113-03_lambda_1000_flat_20140709172215.fits.gz'
-    outfile = '113-03_assembled_image.fits'
+#    infile = '113-03_lambda_1000_flat_20140709172215.fits.gz'
+#    outfile = '113-03_assembled_image.fits'
 
 #    infile = '114-04_lambda_0980_flat_20140501072543.fits.gz'
 #    outfile = '114-04_assembled_image.fits'
+
+    infile = 'snap_1440463613702-firstset-dark-500-0.fits'
+    outfile = 'snap_mosaicked.fits'
+
+#    infile = 'snap_ltkw_repaired.fits'
+#    outfile = 'snap_ltkw_repaired_mosaicked.fits'
 
     builder = CcdBuilder(infile, inAmpCoords=True, clobberMetadata=True)
 
