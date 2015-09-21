@@ -13,6 +13,7 @@ def _parseGeomKeyword(value):
 class CcdBuilder(fitsUtils.DetectorBuilder):
     _namps = 16
     def __init__(self, infile, **kwds):
+        self.infile = infile
         ampfiles = ['%s[%i]' % (infile, amp) for amp in range(1, self._namps+1)]
         super(CcdBuilder, self).__init__(infile, ampfiles, **kwds)
     def _sanitizeHeaderMetadata(self, metadata, clobber):
@@ -22,6 +23,11 @@ class CcdBuilder(fitsUtils.DetectorBuilder):
         xbnds, ybnds = _parseGeomKeyword(metadata.get('DATASEC'))
         biassec = '[%i:%i,1:%i]' % (xbnds[1]+1, naxis1, ybnds[1])
         fitsUtils.setByKey(metadata, 'BIASSEC', biassec, clobber)
+        # Set DETSIZE to be the physical detector size in pixels
+        detxsize = 8*(xbnds[1] - xbnds[0] + 1)
+        detysize = 2*(ybnds[1] - ybnds[0] + 1)
+        detsize = '[1:%i,1:%i]' % (detxsize, detysize)
+        fitsUtils.setByKey(metadata, 'DETSIZE', detsize, clobber)
         # Get channel number and convert to zero index
         channel = fitsUtils.getByKey(metadata, 'CHANNEL')-1
         if channel is None:
@@ -41,7 +47,7 @@ class CcdBuilder(fitsUtils.DetectorBuilder):
         hdus = {}
         for i in range(self._namps):
             hdu = i + 1
-            filename = '%s[%i]' % (infile, hdu)
+            filename = '%s[%i]' % (self.infile, hdu)
             md = afwImage.readMetadata(filename)
             imDict[md.get('EXTNAME')] = afwImage.ImageF(filename)
             hdus[md.get('EXTNAME')] = hdu
